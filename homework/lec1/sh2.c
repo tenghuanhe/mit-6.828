@@ -82,23 +82,19 @@ runcmd(struct cmd *cmd)
     pipe(pipefd);
 
     if (fork1() == 0) {
-      close(1);
-      dup(pipefd[1]);
+      // Child process is the writer
       close(pipefd[0]);
-      close(pipefd[1]);
+      dup2(pipefd[1], STDOUT_FILENO);
       runcmd(pcmd->left);
-    }
-    if (fork1() == 0) {
-      close(0);
-      dup(pipefd[0]);
-      close(pipefd[0]);
       close(pipefd[1]);
+    } else {
+      // Parent process is the reader.
+      close(pipefd[1]);
+      dup2(pipefd[0], STDIN_FILENO);
       runcmd(pcmd->right);
+      close(pipefd[0]);
+      wait(0);
     }
-    close(pipefd[0]);
-    close(pipefd[1]);
-    wait(0);
-    wait(0);
     break;
   }    
   exit(0);
